@@ -21,7 +21,7 @@
 # SOFTWARE.
 
 '''
-one-sample-problem.py
+oneSampleProblem.py
 AW
 
 TL;DR -- This script creates the results shown in Warrington and Dhir 2018,
