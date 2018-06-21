@@ -9,3 +9,13 @@ We also provide Docker files such that the code can be run automatically inside 
 Although this approach is currently overkill, future incarnations of the code may have more complex dependencies and hence the portability of Docker is key (and because Docker is awesome and everyone should Dockerise their code for ever more!).
 
 We are currently implementing Jupyter notebook versions of the code, watch this space.
+
+# Regular sampling problem
+The first example presented is the regular sampling problem, that is to say, computing the optimal number of equispaced samples to draw to optimally tradeoff localisation accuracy and expenditure.
+
+Code to come soon.
+
+# One sample problem
+The second example, termed the one sample problem, is the optimal placement of a single sample, given a state dependent noise model.
+To run this experiment, run the script ```oneSampleProblem.py```. 
+All parameters are set towards the top of the script, and all outputs are dumped into a directory for subsequent postprocessing.
