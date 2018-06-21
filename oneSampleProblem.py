@@ -81,7 +81,6 @@ np.random.seed(seed)
 # Configure the 'cost' level parameters of the inference procedure.
 # (Generally, bigger number here mean longer run times, but less noisy
 # estimates of quantities.)
-nRepeats = 10
 nTrueTraces = 10
 
 # Set the parameters of the generative procedure. 
@@ -261,36 +260,25 @@ def solve_for_one_trace(_k=None):
 		
 	return single_reconstruction_error
 
-
-# Package up the repeats into handy bundles for job distribution.
-batch_size = nTrueTraces / nRepeats
-
-# Define some holders for the reconstruction error, and 
-# define the masks that we are evaluating over.
-reconstruction_error = np.zeros((nTrueTraces, tObsBins, xObsBins))
+# Define a list for the the masks that we are evaluating over.
 masks = list(itertools.product(range(tObsBins), range(xObsBins)))
 
 # Write some stuff to the file.
-util.echo_to_file(report_name, 'Beginning gridding inferance.')
+util.echo_to_file(report_name, 'Beginning gridding inference.')
 util.echo_to_file(report_name, (str(nTrueTraces) + ' traces to simulate.'))
 
-# This outer loop repeats marginalising over the ground truth.
-for k in range(nRepeats):
-	
-	# Create the vector of batches to map over, and then map the solver.
-	# If we are using multitasking, do this with multipool, else, map.
-	args = range(k * batch_size, (k+1) * batch_size)
-	if batch_pool is not None:
-		rec = batch_pool.map(solve_for_one_trace, args)
-	else:
-		rec = map(solve_for_one_trace, args)
-	reconstruction_error[range(k * batch_size, (k+1) * batch_size), :, :] = rec
-	util.echo_to_file(report_name, str((k+1) * batch_size) + ' complete.\n')
-	
+if batch_pool is not None:
+	rec = batch_pool.map_async(solve_for_one_trace, range(nTrueTraces))
+	rec = rec.get()
+else:
+	rec = [solve_for_one_trace(_i) for _i in range(nTrueTraces)]
+	# reconstruction_error[range(k * batch_size, (k+1) * batch_size), :, :] = rec
+reconstruction_error = np.asarray(rec)
+
 # Save the results to an output file for recording and post-processing.
 f = h5.File(folder_output_name + '/results.h5', 'w')
-f.attrs.create('Ordering', 'x-obs, t-obs, MC-Samples.')  # h5 reverses the order.
-f.create_dataset("reconstruction_errors", data=reconstruction_error)
+f.attrs.create('Ordering', 'x-obs, t-obs, MC-Samples.'.encode('utf8'))  # h5 reverses the order.
+f.create_dataset("reconstruction_errors", data=reconstruction_error.transpose([2, 1, 0]))
 f.create_dataset("time_bins", data=tSteps)
 f.create_dataset("x_bins", data=xObs)
 f.close()
@@ -303,7 +291,8 @@ fig = plt.figure()
 plt.savefig(folder_output_name + '/reconstruction_final.png')
 
 # Plot a heatmap of the error.
-plt.imshow(reconstruction_error, cmap='hot', interpolation='nearest')
+fig = plt.figure()
+plt.imshow(np.mean(reconstruction_error, axis=0), cmap='hot', interpolation='nearest')
 plt.pause(0.01)
 plt.savefig(folder_output_name + '/heatmap_final.png')
 
