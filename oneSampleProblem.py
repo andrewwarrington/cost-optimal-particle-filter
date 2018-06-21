@@ -67,7 +67,7 @@ import util
 
 # We dump all experimental logs into a folder, named here.
 # If this folder doesnt exist (it shouldn't...), create it.
-folder_output_name = "sub_1d_" + time.strftime("%Y_%m_%d") + "_" \
+folder_output_name = "OSP_" + time.strftime("%Y_%m_%d") + "_" \
 						+ time.strftime("%H_%M_%S")
 report_name = folder_output_name + '/report.txt'
 if not os.path.exists(folder_output_name):
