@@ -83,7 +83,8 @@ sigmaPlant = 0.01  # S.D. of the gaussian plant noise.
 tMax = 100  # Number of timesteps to simulate over.
 
 # Define the parameters of the cost-level optimisation.
-configurations = range(tMax + 1)  # Evaluate all possible configurations.
+# configurations = range(tMax + 1)  # Evaluate all possible configurations.
+configurations = np.arange(0, tMax, 11)
 lambdaHyper = 0.1  # Value of lambda hyperparameter.
 
 # Define some slightly less important inference level parameters.
@@ -91,27 +92,31 @@ lambdaHyper = 0.1  # Value of lambda hyperparameter.
 nPointsToInterp = 10000 + 1
 
 # Do some automated computation to save time later.
-n_samples = range(tMax)
+n_samples = len(configurations)
 interp_bins = np.linspace(0, tMax, nPointsToInterp)
 
-errors = np.zeros((len(n_samples),))
-costs = np.zeros((len(n_samples),))
-total_cost = np.zeros((len(n_samples),))
+# Define some holders to be filled in later once the values have
+# been calculated.
+errors = np.zeros((n_samples,))
+costs = np.zeros((n_samples,))
+total_cost = np.zeros((n_samples,))
 
 
 def calculate_var(_n, _plant_var, _t_max):
 	'''
 	AW.
 	calculate_var -
-	:param _n:
-	:param _plant_var:
-	:param _t_max:
-	:return:
+	:param _n:          Number of observations to take during the trace.
+	:param _plant_var:  Variance of the plant model.
+	:param _t_max:      The length of the simulation.
+	:return: The sum of the variances over the trace.
 	'''
+	# Equally space the observations, and add one
+	# at the start and finish, just to make the calculations work.
 	obs_plan = np.linspace(0, _t_max, _n+2)
-	differences = np.diff(obs_plan)
-	variances = differences * differences * _plant_var * 0.5
-	sum_var = np.sum(variances)
+	differences = np.diff(obs_plan)  # Find the spacing between each observe.
+	variances = differences * differences * _plant_var * 0.5  # Calculate area.
+	sum_var = np.sum(variances)  # Sum the variance triangles.
 	return sum_var
 
 
@@ -156,33 +161,24 @@ for _i in range(len(configurations)):
 	total_cost[_i] = errors[_i] + lambdaHyper * costs[_i]
 
 
-[opt_val, opt_loc] = min(total_cost)
+opt_val = np.min(total_cost)
+opt_loc = np.argmin(total_cost)
 print(opt_loc)
-
-
-
-
 
 # Save the results to an output file for recording and post-processing.
 f = h5.File(folder_output_name + '/results.h5', 'w')
-f.attrs.create('Ordering', 'x-obs, t-obs, MC-Samples.'.encode('utf8'))  # h5 reverses the order.
-f.create_dataset("reconstruction_errors", data=reconstruction_error.transpose([2, 1, 0]))
-f.create_dataset("time_bins", data=tSteps)
-f.create_dataset("x_bins", data=xObs)
+f.create_dataset("spacing", data=configurations)
+f.create_dataset("costs", data=costs)
+f.create_dataset("errors", data=errors)
+f.create_dataset("total_cost", data=total_cost)
 f.close()
 
 # Quickly throw up a figure representing the reconstruction errors.
-# Should be a 3-D graph realistically.
-a = np.mean(reconstruction_error, axis=0)
 fig = plt.figure()
-[plt.plot(xObs, _a) for _a in a]
-plt.savefig(folder_output_name + '/reconstruction_final.png')
-
-# Plot a heatmap of the error.
-fig = plt.figure()
-plt.imshow(np.mean(reconstruction_error, axis=0), cmap='hot', interpolation='nearest')
-plt.pause(0.01)
-plt.savefig(folder_output_name + '/heatmap_final.png')
+plt.plot(configurations, errors)
+plt.plot(configurations, costs)
+plt.plot(configurations, total_cost)
+plt.savefig(folder_output_name + '/kalman_cost.png')
 
 p = 0
 
