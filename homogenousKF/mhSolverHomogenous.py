@@ -32,13 +32,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Import custom modules.
-import homogenousKF.evaluateSchedule as es
+import homogenousKF.evaluateHomogenousSchedule as es
 
 
 def run_chain():
 	
 	# Define parameters of MH.
-	mh_steps = 10000
+	mh_steps = 100000
 	transition_prob = [0.2, 0.6, 0.2]  # The local transition kernel.
 	transition_kern = [-1, 0, 1]       # Transition kernel space.
 	

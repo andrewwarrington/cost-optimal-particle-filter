@@ -41,7 +41,8 @@ dimensions = 2
 dt = 1
 
 # Define the hyperparameter.
-lambda_hyp = 0.1
+lambda_hyp = 0.1  # Cost weight.
+phi_hyp = 0.001    # Var weight.
 
 # Plant model.
 vVarForwards = 0.00                        # Variance of the (forward) velocity in the plant model.
@@ -95,7 +96,7 @@ def evaluate(_schedule, _course, _return_just_value=False, _plot=False):
 			
 	total_cost = cost
 	total_benefit = - np.sum(variance_trajectory[:, 1])  # Note - only interested in lateral variance.
-	total_reward = total_benefit - lambda_hyp * total_cost
+	total_reward = np.exp(phi_hyp * total_benefit - lambda_hyp * total_cost)
 	
 	if _plot:
 		plt.figure()

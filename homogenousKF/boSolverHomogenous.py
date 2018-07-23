@@ -21,48 +21,44 @@
 # SOFTWARE.
 
 """
-evaluateSchedule.py
+boSolverHomogenous.py
 AW
 
 TL;DR -
 """
 
+# Import stock modules.
 import numpy as np
+import matplotlib.pyplot as plt
+import time
+import os
+import copy
+import GPy
+import GPyOpt
+from functools import partial
+
+# Import custom modules.
+import homogenousKF.evaluateHomogenousSchedule as es
+
+# Set up gpyopt stuff.
+domain = [{'name': 'samples', 'type': 'continuous', 'domain': (0, es.t_max)}]
 
 
-# Define constants.
-
-# Simulation params.
-t_max = 100
-
-# Model params.
-plant_var = 0.01
-lambda_hyp = 0.1
+def f(_s):
+	return es.calculate_kalman_cost(_s, _return_just_value=True, _pop=True)
 
 
-def calculate_kalman_cost(n):
+myBopt = GPyOpt.methods.BayesianOptimization(f=f, domain=domain, maximize=True)
+myBopt.run_optimization(max_iter=100)
+myBopt.plot_acquisition()
 
-	# Overload n so that we can directly pass in an observation schedule
-	# constructed outside, or we can generate an equally spaced observation
-	# plan.
-	
-	if np.isscalar(n):
-		obs_plan = equally_space(round(n), t_max)
-	else:
-		obs_plan = n
-		obs_plan = [0.0, obs_plan, t_max]
-	
-	differences = np.diff(obs_plan)
-	variances = differences * differences * plant_var * 0.5
-	
-	sum_var = np.sum(variances)
-	cost = len(obs_plan) - 2
-	total_cost = np.exp(- sum_var - lambda_hyp * cost)
-	
-	return {'r': total_cost, 'u': sum_var, 'c': cost, 'n': n}
+Y_s = np.squeeze(myBopt.Y)
+m = np.argmax(Y_s)
+Y_max = Y_s[m]
+X_max = myBopt.X[m, :]
 
 
-def equally_space(n, t_max):
-	obs_plan = np.linspace(0, t_max+1, n+2)
-	obs_plan = np.round(obs_plan)
-	return obs_plan
+
+
+p = 0
+

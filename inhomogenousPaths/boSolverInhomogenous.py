@@ -41,17 +41,13 @@ from functools import partial
 import inhomogenousPaths.generateRandomCourse as grc
 import inhomogenousPaths.evaluateScheduleAndCourse as esac
 
-samplesToMake = 4
+samplesToMake = 1
 
 course = grc.generate_course(2)
 plt.figure()
 plt.scatter(course['x'][:, 0], course['x'][:, 1])
 plt.axis('equal')
 plt.pause(0.1)
-
-optimal_schedule = np.round(np.linspace(0, grc.t_max, samplesToMake + 2)).astype(np.int)
-optimal_schedule = optimal_schedule[1:-1]
-optimal_reward = esac.evaluate(optimal_schedule, course)
 
 # Set up gpyopt stuff.
 domain = [{'name': 'samples', 'type': 'continuous', 'domain': (1, grc.t_max), 'dimensionality': samplesToMake}]
@@ -61,8 +57,8 @@ def f(_s):
 	return esac.evaluate(_s, course, _return_just_value=True)
 
 
-myBopt = GPyOpt.methods.BayesianOptimization(f=f, domain=domain)
-myBopt.run_optimization(max_iter=200)
+myBopt = GPyOpt.methods.BayesianOptimization(f=f, domain=domain, maximize=True)
+myBopt.run_optimization(max_iter=100)
 myBopt.plot_acquisition()
 
 Y_s = np.squeeze(myBopt.Y)

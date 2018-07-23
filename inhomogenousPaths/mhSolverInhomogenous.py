@@ -38,9 +38,9 @@ import copy
 import inhomogenousPaths.generateRandomCourse as grc
 import inhomogenousPaths.evaluateScheduleAndCourse as esac
 
-samplesToMake = 4
+samplesToMake = 2
 
-course = grc.generate_course(1)
+course = grc.generate_course(2)
 plt.figure()
 plt.scatter(course['x'][:, 0], course['x'][:, 1])
 plt.axis('equal')
@@ -53,7 +53,7 @@ optimal_reward = esac.evaluate(optimal_schedule, course)
 schedule = np.sort(np.random.randint(0, grc.t_max, samplesToMake))
 
 # Define parameters of MH.
-mh_steps = 100000
+mh_steps = 10000
 transition_prob = [0.2, 0.6, 0.2]  # The local transition kernel.
 transition_kern = [-1, 0, 1]  # Transition kernel space.
 
